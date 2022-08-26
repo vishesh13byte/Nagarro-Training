@@ -12,12 +12,20 @@ var Order = require("./models/order");
 var User = require("./models/user");
 var OrderCount = require("./models/orderCount");
 var flash = require("connect-flash");
+const path = require("path");
 
-const dotenv = require("dotenv");
-dotenv.config();
+require('dotenv').config({ path: path.resolve(__dirname +'./.env') });
+var dbURL = process.env.DATABASEURL; 
+//console.log(process.env.DATABASEURL);
+mongoose.connect(dbURL, {useNewUrlParser: true});
 
-var dbURL = process.env.DATABASEURL || "mongodb://localhost:27017/ecommerce";
-mongoose.connect(dbURL, { useNewUrlParser: true, useUnifiedTopology: true });
+// --------------------------deployment------------------------------
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(__dirname + "/public"));
+}
+
+// --------------------------deployment------------------------------
 
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
@@ -26,7 +34,7 @@ app.use(methodOverride("_method"));
 app.use(flash());
 
 app.use(
-  require("express-session")({
+  require("cookie-session")({
     secret: "abd",
     resave: false,
     saveUninitialized: false,
@@ -62,9 +70,11 @@ app.use(checkoutRoutes);
 app.use(orderRoutes);
 
 OrderCount.find({}, function (err, orderCountObjects) {
-  if (orderCountObjects.length == 0) {
+  if (typeof orderCountObjects === 'undefined'){
+      console.log("...");
+  }else if(orderCountObjects.length == 0) {
     OrderCount.create({ count: 0 });
   }
 });
 
-app.listen(process.env.PORT || 3000, process.env.IP);
+app.listen(process.env.PORT);
